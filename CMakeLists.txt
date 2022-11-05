@@ -72,3 +72,17 @@ else()
     target_include_directories(variant_pointer
         PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 endif()
+
+file(GLOB_RECURSE TEST_INC "test/*.hh")
+file(GLOB_RECURSE TEST_SRC "test/*.cc")
+
+add_executable(variant_pointer_test)
+target_sources(variant_pointer_test PRIVATE ${TEST_SRC} ${TEST_INC})
+target_link_libraries(variant_pointer_test
+    PRIVATE
+    variant_pointer_copts_common
+    variant_pointer
+    Catch2::Catch2WithMain)
+add_test(
+    NAME variant_pointer_test
+    COMMAND variant_pointer_test)

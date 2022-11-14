@@ -7,7 +7,6 @@
     },
     "configurePresets": [
         {
-            "hidden": true,
             "name": "global",
             "binaryDir": "${sourceDir}/build",
             "generator": "Ninja"
@@ -130,6 +129,12 @@
         {
             "name": "gcc-release-lto",
             "configurePreset": "gcc-release-lto"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "default",
+            "configurePreset": "global"
         }
     ]
 }

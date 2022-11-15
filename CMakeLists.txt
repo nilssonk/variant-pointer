@@ -33,10 +33,6 @@ if (VARIANT_POINTER_TESTS)
     enable_testing()
 endif()
 
-set(VARIANT_POINTER_EXTRA_CFLAGS -O3 -ffast-math -fvisibility=hidden)
-
-set_property(GLOBAL PROPERTY VARIANT_POINTER_RELEASE_EXTRA_CFLAGS ${VARIANT_POINTER_EXTRA_CFLAGS})
-
 add_subdirectory(3rdparty)
 
 add_library(variant_pointer_copts_common INTERFACE)
@@ -55,8 +51,7 @@ target_compile_options(variant_pointer_copts_common INTERFACE
     -Werror
     -Wstrict-aliasing=2
     $<$<C_COMPILER_ID:Clang>:-Wshadow-all>
-    $<$<CXX_COMPILER_ID:Clang>:-Wshadow-all>
-    $<$<STREQUAL:$<CONFIG>,Release>:${VARIANT_POINTER_EXTRA_CFLAGS}>)
+    $<$<CXX_COMPILER_ID:Clang>:-Wshadow-all>)
 
 # Main project
 file(GLOB_RECURSE INC "include/*.hh")
@@ -72,17 +67,21 @@ else()
     target_include_directories(variant_pointer
         PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 endif()
+configure_lto(variant_pointer)
 
-file(GLOB_RECURSE TEST_INC "test/*.hh")
-file(GLOB_RECURSE TEST_SRC "test/*.cc")
+# Tests
+if(VARIANT_POINTER_TESTS)
+    file(GLOB_RECURSE TEST_INC "test/*.hh")
+    file(GLOB_RECURSE TEST_SRC "test/*.cc")
 
-add_executable(variant_pointer_test)
-target_sources(variant_pointer_test PRIVATE ${TEST_SRC} ${TEST_INC})
-target_link_libraries(variant_pointer_test
-    PRIVATE
-    variant_pointer_copts_common
-    variant_pointer
-    Catch2::Catch2WithMain)
-add_test(
-    NAME variant_pointer_test
-    COMMAND variant_pointer_test)
+    add_executable(variant_pointer_test)
+    target_sources(variant_pointer_test PRIVATE ${TEST_SRC} ${TEST_INC})
+    target_link_libraries(variant_pointer_test
+        PRIVATE
+        variant_pointer_copts_common
+        variant_pointer
+        Catch2::Catch2WithMain)
+    add_test(
+        NAME variant_pointer_test
+        COMMAND variant_pointer_test)
+endif()

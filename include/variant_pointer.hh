@@ -4,65 +4,70 @@
  * SPDX-License-Identifier: MIT
  */
 
+#ifndef VARIANT_POINTER_HH
+#define VARIANT_POINTER_HH
+
+#if !defined(__cplusplus) || __cplusplus < 201402L
+#error "This library requires at least C++14 to be used."
+#endif
+
+#include "detail/conjunction.hh"
+#include "detail/disjunction.hh"
+#include "detail/index_of.hh"
+
 #include <cstdint>
 #include <type_traits>
 
 namespace nilssonk {
 
-namespace detail {
-
-template<typename T, typename... Us>
-struct index_of;
-
-template<typename T, typename... Us>
-struct index_of<T, T, Us...> : std::integral_constant<unsigned long, 0> {
-};
-
-template<typename T, typename U, typename... Us>
-struct index_of<T, U, Us...>
-    : std::integral_constant<unsigned long, 1 + index_of<T, Us...>::value> {
-};
-
-} // namespace detail
-
-template<typename... Ts>
+template<class... Ts>
 class variant_pointer {
-    uintptr_t value_;
+    const uintptr_t value_;
 
-    static constexpr unsigned long required_alignment = 1
+    static constexpr unsigned long kRequiredAlignment = 1
                                                         << (sizeof...(Ts) - 1);
 
+    template<class T>
+    struct alignment_ok
+        : std::integral_constant<bool, (alignof(T) > kRequiredAlignment)> {
+    };
+
+    template<class T>
+    struct type_in_pack : detail::disjunction<std::is_same<T, Ts>...> {
+    };
+
     static_assert(
-        std::conjunction_v<
-            std::bool_constant<(alignof(Ts) > required_alignment)>...>,
+        detail::conjunction<alignment_ok<Ts>...>::value,
         "Minimum pointer alignment must be sufficiently large to store "
         "target discriminant");
 
 public:
-    template<typename T,
-             typename = std::enable_if_t<std::disjunction_v<
-                 std::is_same<std::remove_const_t<T>, Ts>...>>>
-    explicit variant_pointer(T * x) noexcept
-        : value_{reinterpret_cast<uintptr_t>(x) |
+    template<class T,
+             class = std::enable_if<type_in_pack<std::remove_const_t<T>>::value>>
+    explicit variant_pointer(T * ptr_value) noexcept
+        : value_{reinterpret_cast<uintptr_t>(ptr_value) |
                  detail::index_of<std::remove_const_t<T>, Ts...>::value}
     {
     }
 
-    explicit variant_pointer(uintptr_t x) noexcept : value_{x} {}
+    explicit variant_pointer(uintptr_t value) noexcept : value_{value} {}
 
-    operator uintptr_t() noexcept
+    explicit operator uintptr_t() const noexcept
     {
         return value_;
     }
 
-    template<typename T>
-    [[nodiscard]] T *
+    template<class T>
+#if __cplusplus >= 201703L
+    [[nodiscard]]
+#endif
+    T *
     try_get() const noexcept
     {
         using RawT = std::remove_const_t<T>;
 
         auto const sought_index = detail::index_of<RawT, Ts...>::value;
-        auto const free_mask = required_alignment - 1;
+        auto const free_mask = kRequiredAlignment - 1;
         auto const storage_part = value_ & free_mask;
         auto const pointer_part = value_ & ~free_mask;
         if (storage_part == sought_index) {
@@ -74,3 +79,5 @@ public:
 };
 
 } // namespace nilssonk
+
+#endif

@@ -4,10 +4,6 @@ project(variant_pointer VERSION 0.1 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
 include(lto.helper)
 include(with.helper)
 include(tidy.helper)
@@ -68,6 +64,7 @@ else()
         PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 endif()
 configure_lto(variant_pointer)
+configure_tidy(variant_pointer)
 
 # Tests
 if(VARIANT_POINTER_TESTS)
